@@ -1,0 +1,56 @@
+version: '2'
+
+services:
+#  app:
+#    build: .
+#    ports:
+#      - "8080:8080"
+#    links:
+#      - logstash
+
+  elasticsearch:
+    build: elk/elasticsearch/
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+
+  logstash:
+    build: elk/logstash/
+    container_name: logstash
+    command: -f /etc/logstash/conf.d/
+    volumes:
+      - ./elk/logstash/config:/etc/logstash/conf.d
+    ports:
+      - "9999:9999"
+    links:
+      - elasticsearch
+
+  kibana:
+    build: elk/kibana/
+    container_name: kibana
+    volumes:
+      - ./elk/kibana/config/:/opt/kibana/config/
+    ports:
+      - "5601:5601"
+    links:
+      - elasticsearch
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:9.0.1
+    container_name: grafana
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    ports:
+      - "3000:3000"
